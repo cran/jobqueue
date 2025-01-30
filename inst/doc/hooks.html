@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Callback Hooks</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Callback Hooks</h1>
+
+
+
+<div id="setup" class="section level2">
+<h2>Setup</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">workers =</span> <span class="dv">1</span>)</span></code></pre></div>
+</div>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Callbacks are the cornerstone of asynchronous programming.</p>
+<p>If you want to calculate <code>2 + 2</code> and show the results, the
+synchronous programming approach would be:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">message</span>(<span class="st">&#39;Result = &#39;</span>, <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; Result = 20</span></span></code></pre></div>
+<p>In asynchronous programming, this task is broken apart into two
+discrete steps: <em>computation</em> and <em>result handling</em>. Using
+jobqueue, this looks like:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> })</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>job<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;done&#39;</span>, <span class="sc">~</span><span class="fu">message</span>(<span class="st">&#39;Result = &#39;</span>, .<span class="sc">$</span>result))</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; Result = 20</span></span></code></pre></div>
+<p>The asynchronous format allows parts of your code to run
+independently, in this case on separate R processes. When a part
+finishes, the callback will be executed to allow you to work with the
+result.</p>
+<p>Callbacks are not limited to just the Job finishing. See the “State
+Triggers” section for a list of all events that can trigger a
+callback.</p>
+<blockquote>
+<p><strong>Important</strong></p>
+<p>Hooks are evaluated on the main process, not the background
+processes. Therefore, ensure that the callback functions execute quickly
+so as to not delay Job handling.</p>
+</blockquote>
+</div>
+<div id="a-callback-function" class="section level2">
+<h2>A Callback Function</h2>
+<p>The callback function should accept one argument: the object that
+triggered the callback. Functions accepting zero or multiple arguments
+are also allowed.</p>
+<p>This is a great place for shorthand function definitions introduced
+by R 4.1.0.</p>
+<p>jobqueue also understands the lambda syntax for functions (see
+<code>rlang::as_function()</code>).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Queue Hooks</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="cf">function</span> (queue) { <span class="fu">message</span>(<span class="st">&#39;Queue is &#39;</span>, queue<span class="sc">$</span>state) }</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>hook <span class="ot">&lt;-</span> \(q) <span class="fu">message</span>(<span class="st">&#39;Queue is &#39;</span>, q<span class="sc">$</span>state)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="er">~</span><span class="fu">message</span>(<span class="st">&#39;Queue is &#39;</span>, .<span class="sc">$</span>state)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># Worker Hooks</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="cf">function</span> (worker) { <span class="fu">message</span>(<span class="st">&#39;Worker is &#39;</span>, worker<span class="sc">$</span>state) }</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>hook <span class="ot">&lt;-</span> \(w) <span class="fu">message</span>(<span class="st">&#39;Worker is &#39;</span>, w<span class="sc">$</span>state)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="er">~</span><span class="fu">message</span>(<span class="st">&#39;Worker is &#39;</span>, .<span class="sc">$</span>state)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co"># Job Hooks</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="cf">function</span> (job) { <span class="fu">message</span>(<span class="st">&#39;Job is &#39;</span>, job<span class="sc">$</span>state) }</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>hook <span class="ot">&lt;-</span> \(j) <span class="fu">message</span>(<span class="st">&#39;Job is &#39;</span>, j<span class="sc">$</span>state)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="er">~</span><span class="fu">message</span>(<span class="st">&#39;Job is &#39;</span>, .<span class="sc">$</span>state)</span></code></pre></div>
+</div>
+<div id="triggers" class="section level2">
+<h2>Triggers</h2>
+<p>Queue, Worker, and Job objects update their <code>$state</code> as
+described in the tables below. Each time the state changes, any
+callbacks registered to that state are executed. In addition, you can
+register <code>state = &#39;*&#39;</code> or <code>state=&#39;.next&#39;</code> which
+trigger regardless of the present state name.</p>
+<div id="special-triggers" class="section level3">
+<h3>Special Triggers</h3>
+<table>
+<colgroup>
+<col width="21%" />
+<col width="78%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>State</th>
+<th>Triggers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&#39;*&#39;</code></td>
+<td>Every time the state changes.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;.next&#39;</code></td>
+<td>Only one time, the next time the state changes.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="queue-states" class="section level3">
+<h3>Queue States</h3>
+<table>
+<colgroup>
+<col width="21%" />
+<col width="78%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>State</th>
+<th>Triggers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&#39;starting&#39;</code></td>
+<td>After initialization, before Workers are started.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;idle&#39;</code></td>
+<td>When all Workers are idle. Also, after initial startup.</td>
+</tr>
+<tr class="odd">
+<td><code>&#39;busy&#39;</code></td>
+<td>At least one worker is busy.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;stopped&#39;</code></td>
+<td>After <code>&lt;Queue&gt;$stop()</code> is called.</td>
+</tr>
+<tr class="odd">
+<td><code>&#39;error&#39;</code></td>
+<td>Workers did not start cleanly.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="worker-states" class="section level3">
+<h3>Worker States</h3>
+<table>
+<colgroup>
+<col width="21%" />
+<col width="78%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>State</th>
+<th>Triggers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&#39;starting&#39;</code></td>
+<td>Background process is being configured.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;idle&#39;</code></td>
+<td>Waiting on Jobs to be submitted.</td>
+</tr>
+<tr class="odd">
+<td><code>&#39;busy&#39;</code></td>
+<td>After a Job starts running.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;stopped&#39;</code></td>
+<td>After <code>&lt;Worker&gt;$stop()</code> is called.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="job-states" class="section level3">
+<h3>Job States</h3>
+<table>
+<colgroup>
+<col width="21%" />
+<col width="78%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>State</th>
+<th>Triggers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&#39;created&#39;</code></td>
+<td>After <code>Job$new()</code> initialization.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;submitted&#39;</code></td>
+<td>After <code>&lt;Job&gt;$queue</code> is assigned.</td>
+</tr>
+<tr class="odd">
+<td><code>&#39;queued&#39;</code></td>
+<td>After <code>stop_id</code> and <code>copy_id</code> are
+resolved.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;starting&#39;</code></td>
+<td>Before evaluation begins.</td>
+</tr>
+<tr class="odd">
+<td><code>&#39;running&#39;</code></td>
+<td>After <code>&lt;Job&gt;$worker</code> is set and evaluation
+begins.</td>
+</tr>
+<tr class="even">
+<td><code>&#39;done&#39;</code></td>
+<td>After <code>&lt;Job&gt;$output</code> is assigned.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="attaching" class="section level2">
+<h2>Attaching</h2>
+<p>Callbacks can be attached to Queue, Worker, or Job objects.</p>
+<p>You can add callbacks either when you create the object with
+<code>$new()</code>, or later with <code>$on()</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>hook <span class="ot">&lt;-</span> <span class="er">~</span><span class="fu">message</span>(.<span class="sc">$</span>uid, <span class="st">&#39; is &#39;</span>, .<span class="sc">$</span>state)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks  =</span> <span class="fu">list</span>(<span class="at">q_idle =</span> hook))</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>w <span class="ot">&lt;-</span> Worker<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">idle   =</span> hook))</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>j <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks    =</span> <span class="fu">list</span>(<span class="at">done   =</span> hook))</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;busy&#39;</span>,     hook)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>w<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;busy&#39;</span>,     hook)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>j<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;starting&#39;</span>, hook)</span></code></pre></div>
+<p>In <code>Queue$new()</code>, <code>hooks</code> can set hooks for the
+Queue, Worker, and Job objects. The rules are:</p>
+<ul>
+<li>Prefixing with <code>q_</code>, <code>w_</code>, or <code>j_</code>
+attaches the hook to the Queue, Workers, or Jobs, respectively.</li>
+<li>Non-prefixed hooks are attached to Jobs.</li>
+<li>Alternatively, a list of lists can be assigned to hooks, of the
+format:</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>Queue<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="st">&#39;hooks&#39;</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>    <span class="st">&#39;queue&#39;</span>  <span class="ot">=</span> <span class="fu">list</span>(<span class="at">idle =</span> hook), </span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    <span class="st">&#39;worker&#39;</span> <span class="ot">=</span> <span class="fu">list</span>(<span class="at">idle =</span> hook), </span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="st">&#39;job&#39;</span>    <span class="ot">=</span> <span class="fu">list</span>(<span class="at">done =</span> hook) ))</span></code></pre></div>
+</div>
+<div id="removing" class="section level2">
+<h2>Removing</h2>
+<p>Callbacks attached with <code>$new()</code> cannot be removed.</p>
+<p>When you attach a callback with <code>$on()</code>, the return value
+is a function, which, when called, will remove that callback from the
+object.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="st">&#39;expr&#39;</span>  <span class="ot">=</span> { <span class="fl">3.14</span> }, </span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="st">&#39;hooks&#39;</span> <span class="ot">=</span> <span class="fu">list</span>(<span class="at">done =</span> <span class="sc">~</span><span class="fu">message</span>(<span class="st">&#39;ABC&#39;</span>)) )</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>off <span class="ot">&lt;-</span> job<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;done&#39;</span>, <span class="sc">~</span><span class="fu">message</span>(<span class="st">&#39;XYZ&#39;</span>))</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">off</span>()</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">submit</span>(job)</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; ABC</span></span></code></pre></div>
+</div>
+<div id="default-job-hooks" class="section level2">
+<h2>Default Job Hooks</h2>
+<p>When you create a Queue (with <code>Queue$new()</code>), you can
+define a set of callbacks to automatically apply to any Jobs that are
+created with the <code>&lt;Queue&gt;$run()</code> command.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">created =</span> <span class="sc">~</span>{ n <span class="ot">&lt;&lt;-</span> n <span class="sc">+</span> <span class="dv">1</span> } ))</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) q<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;Hi&#39;</span> })</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>n</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; [1] 5</span></span></code></pre></div>
+<p>How does <code>Queue$new()</code> know to apply the
+<code>hooks</code> to Jobs instead of Queues or Workers? Unless
+otherwise indicated, <code>Queue$new()</code> <code>hooks</code> are
+assumed to be for Jobs. You can also explicitly specify that
+<code>hooks</code> are for Jobs by using the formats described in the
+“Attaching Callbacks” section above.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">j_created =</span> <span class="sc">~</span>{ n <span class="ot">&lt;&lt;-</span> n <span class="sc">+</span> <span class="dv">1</span> } ))</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">job =</span> <span class="fu">list</span>(<span class="at">created =</span> <span class="sc">~</span>{ n <span class="ot">&lt;&lt;-</span> n <span class="sc">+</span> <span class="dv">1</span> } )))</span></code></pre></div>
+<p>If you set <code>hooks</code> in <code>&lt;Queue&gt;$run()</code>,
+those hooks will REPLACE the Job hooks from
+<code>Queue$new()</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">created =</span> <span class="sc">~</span>{ n <span class="ot">&lt;&lt;-</span> n <span class="sc">+</span> <span class="dv">1</span> } ))</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) q<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;Hi&#39;</span> }, <span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">done =</span> <span class="sc">~</span><span class="fu">message</span>(.<span class="sc">$</span>result)))</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt; Hi</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; Hi</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt; Hi</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>n</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+</div>
+<div id="use-case-priority-setting" class="section level2">
+<h2>Use Case: Priority Setting</h2>
+<p>Below, we’ll set up a callback function that triggers when each Job
+enters the <code>&#39;queued&#39;</code> state. It will modify the Job, adding a
+custom <code>&lt;Job&gt;$priority</code> field to the Job object. Then
+it will modify the Queue’s internal list of jobs
+(<code>&lt;Queue&gt;$jobs</code>), sorting them according to each Job’s
+<code>&lt;Job&gt;$priority</code>. Last, it will attach additional
+callbacks to the Job to output timing information upon exit from the
+<code>&#39;queued</code>’ state and upon entry into the <code>&#39;done&#39;</code>
+state.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">library</span>(glue)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co"># Our callback/hook function.</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>prioritize <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  queue      <span class="ot">&lt;-</span> job<span class="sc">$</span>queue</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  queue_jobs <span class="ot">&lt;-</span> job<span class="sc">$</span>queue<span class="sc">$</span>jobs</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  <span class="co"># Apply a random priority to this job.</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>  job<span class="sc">$</span>priority <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">runif</span>(<span class="dv">1</span>) <span class="sc">*</span> <span class="dv">10</span>) <span class="sc">-</span> <span class="dv">5</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>  </span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>  <span class="co"># Sort all this Queue&#39;s jobs by priority (including this job).</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>  priorities     <span class="ot">&lt;-</span> <span class="fu">sapply</span>(queue_jobs, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&#39;priority&#39;</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>  job<span class="sc">$</span>queue<span class="sc">$</span>jobs <span class="ot">&lt;-</span> queue_jobs[<span class="fu">order</span>(priorities)]</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  </span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>  <span class="co"># Add hooks to this job to report queued/total times.</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>  t1    <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>  tdiff <span class="ot">&lt;-</span> <span class="cf">function</span> () <span class="fu">format</span>(<span class="fu">round</span>(<span class="fu">Sys.time</span>() <span class="sc">-</span> t1, <span class="dv">1</span>))</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a>  </span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a>  job<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;.next&#39;</span>, <span class="sc">~</span><span class="fu">message</span>(<span class="fu">glue</span>(</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a>    <span class="st">&#39;Job {.$uid} (priority {.$priority}) was {.$state} after {tdiff()}&#39;</span> )))</span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a>    </span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a>  job<span class="sc">$</span><span class="fu">on</span>(<span class="st">&#39;done&#39;</span>, <span class="sc">~</span><span class="fu">message</span>(<span class="fu">glue</span>(</span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a>    <span class="st">&#39;Job {.$uid} (priority {.$priority}) finished in {tdiff()}&#39;</span> )))</span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a>}</span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="co"># A single worker best illustrates processing order.</span></span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a>  <span class="st">&#39;workers&#39;</span> <span class="ot">=</span> <span class="dv">1</span>, </span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a>  <span class="st">&#39;hooks&#39;</span>   <span class="ot">=</span> <span class="fu">list</span>(<span class="at">queued =</span> prioritize) )</span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>) {</span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a>  job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fl">3.14</span> })</span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a>  <span class="fu">message</span>(<span class="fu">glue_data</span>(job, <span class="st">&#39;Created Job {uid} with priority {priority}&#39;</span>))</span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a>}</span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a><span class="co">#&gt; Job J11 (priority -3) was dispatched after 0.1 secs</span></span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a><span class="co">#&gt; Created Job J11 with priority -3</span></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="co">#&gt; Created Job J12 with priority -2</span></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a><span class="co">#&gt; Created Job J13 with priority 1</span></span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a><span class="co">#&gt; Created Job J14 with priority 0</span></span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a><span class="co">#&gt; Created Job J15 with priority -1</span></span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a><span class="co">#&gt; Job J11 (priority -3) finished in 0.7 secs</span></span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a><span class="co">#&gt; Job J12 (priority -2) was dispatched after 0.6 secs</span></span>
+<span id="cb11-45"><a href="#cb11-45" tabindex="-1"></a><span class="co">#&gt; Job J12 (priority -2) finished in 1.1 secs</span></span>
+<span id="cb11-46"><a href="#cb11-46" tabindex="-1"></a><span class="co">#&gt; Job J15 (priority -1) was dispatched after 0.7 secs</span></span>
+<span id="cb11-47"><a href="#cb11-47" tabindex="-1"></a><span class="co">#&gt; Job J15 (priority -1) finished in 1.3 secs</span></span>
+<span id="cb11-48"><a href="#cb11-48" tabindex="-1"></a><span class="co">#&gt; Job J14 (priority 0) was dispatched after 1.4 secs</span></span>
+<span id="cb11-49"><a href="#cb11-49" tabindex="-1"></a><span class="co">#&gt; Job J14 (priority 0) finished in 2 secs</span></span>
+<span id="cb11-50"><a href="#cb11-50" tabindex="-1"></a><span class="co">#&gt; Job J13 (priority 1) was dispatched after 2.1 secs</span></span>
+<span id="cb11-51"><a href="#cb11-51" tabindex="-1"></a><span class="co">#&gt; Job J13 (priority 1) finished in 2.6 secs</span></span></code></pre></div>
+<p>In an actual application, you could set
+<code>&lt;Job&gt;$priority</code> based on
+<code>&lt;Job&gt;$vars</code>.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>prioritize <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  </span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="co"># Give priority to lower number of replications</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  job<span class="sc">$</span>priority <span class="ot">&lt;-</span> job<span class="sc">$</span>vars<span class="sc">$</span>replications</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  </span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>  queue_jobs     <span class="ot">&lt;-</span> job<span class="sc">$</span>queue<span class="sc">$</span>jobs</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>  priorities     <span class="ot">&lt;-</span> <span class="fu">sapply</span>(queue_jobs, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&#39;priority&#39;</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  job<span class="sc">$</span>queue<span class="sc">$</span>jobs <span class="ot">&lt;-</span> queue_jobs[<span class="fu">order</span>(priorities)]</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>}</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">queued =</span> prioritize))</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#                                        vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="cf">for</span> (reps <span class="cf">in</span> <span class="dv">5</span><span class="sc">:</span><span class="dv">1</span>) job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fl">3.14</span> }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">replications =</span> reps))</span></code></pre></div>
+<p>Or, define the custom <code>&lt;Job&gt;$priority</code> field in
+<code>&lt;Queue&gt;$run()</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>prioritize <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  queue_jobs     <span class="ot">&lt;-</span> job<span class="sc">$</span>queue<span class="sc">$</span>jobs</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  priorities     <span class="ot">&lt;-</span> <span class="fu">sapply</span>(queue_jobs, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&#39;priority&#39;</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  job<span class="sc">$</span>queue<span class="sc">$</span>jobs <span class="ot">&lt;-</span> queue_jobs[<span class="fu">order</span>(priorities)]</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>}</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">queued =</span> prioritize))</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#                                        vvvvvvvvvvvvvvv</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="cf">for</span> (reps <span class="cf">in</span> <span class="dv">5</span><span class="sc">:</span><span class="dv">1</span>) job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fl">3.14</span> }, <span class="at">priority =</span> reps)</span></code></pre></div>
+<p>Or, set <code>&lt;Job&gt;$priority</code> in a hook that triggers
+before <code>prioritize()</code> is triggered.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>set_priority <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  job<span class="sc">$</span>priority <span class="ot">&lt;-</span> job<span class="sc">$</span>vars<span class="sc">$</span>replications</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>}</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>prioritize <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  queue_jobs     <span class="ot">&lt;-</span> job<span class="sc">$</span>queue<span class="sc">$</span>jobs</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  priorities     <span class="ot">&lt;-</span> <span class="fu">sapply</span>(queue_jobs, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">&#39;priority&#39;</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>  job<span class="sc">$</span>queue<span class="sc">$</span>jobs <span class="ot">&lt;-</span> queue_jobs[<span class="fu">order</span>(priorities)]</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>}</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#                           vvvvvvvvvvvvvvvvvvvvvv</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">created =</span> set_priority, <span class="at">queued =</span> prioritize))</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="cf">for</span> (reps <span class="cf">in</span> <span class="dv">5</span><span class="sc">:</span><span class="dv">1</span>) job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fl">3.14</span> }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">replications =</span> reps))</span></code></pre></div>
+</div>
+<div id="use-case-rate-limiting" class="section level2">
+<h2>Use Case: Rate Limiting</h2>
+<p>Say you’re hosting a web service, where users are allowed to submit
+one Job every 30 seconds. Jobs can take more than 30 seconds, so the
+solution is more complex than setting <code>stop_id = user_id</code>.
+And what if you want to stop the new Job instead of the old one?</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>rate_limit <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  job<span class="sc">$</span>t_start <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> job<span class="sc">$</span>queue<span class="sc">$</span>jobs)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>    <span class="cf">if</span> (j<span class="sc">$</span>user_id <span class="sc">==</span> job<span class="sc">$</span>user_id)</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>      <span class="cf">if</span> (job<span class="sc">$</span>t_start <span class="sc">-</span> j<span class="sc">$</span>t_start <span class="sc">&lt;</span> <span class="dv">30</span>)</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>        job<span class="sc">$</span><span class="fu">stop</span>(<span class="st">&#39;Rate Limit Exceeded&#39;</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>}</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">submitted =</span> rate_limit))</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>j_A1 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">42</span> }, <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>j_B1 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">42</span> }, <span class="at">user_id =</span> <span class="st">&#39;B&#39;</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>j_B2 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">42</span> }, <span class="at">user_id =</span> <span class="st">&#39;B&#39;</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a>j_B1<span class="sc">$</span>result</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co">#&gt; [1] 42</span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a>j_B2<span class="sc">$</span>result</span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: Rate Limit Exceeded&gt;</span></span></code></pre></div>
+<p>Note that the above code won’t completely solve the rate limiting
+task. If a user’s Job only takes five seconds to complete, then they
+could submit a Job every six seconds and the Queue would be none the
+wiser.</p>
+<p>To give the Queue awareness of previously completed Jobs, you’ll need
+to persistently store per-user Job start times - like in the below
+solution.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>t_user <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>rate_limit <span class="ot">&lt;-</span> <span class="cf">function</span> (job) {</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  t_start <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  t_diff  <span class="ot">&lt;-</span> t_user[[job<span class="sc">$</span>user_id]] <span class="sc">-</span> t_start</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">isTRUE</span>(t_diff <span class="sc">&lt;</span> <span class="dv">30</span>)) { job<span class="sc">$</span><span class="fu">stop</span>(<span class="st">&#39;Rate Limit Exceeded&#39;</span>)   }</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="cf">else</span>                     { t_user[[job<span class="sc">$</span>user_id]] <span class="ot">&lt;&lt;-</span> t_start }</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>}</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">hooks =</span> <span class="fu">list</span>(<span class="at">created =</span> rate_limit))</span></code></pre></div>
+<p>In the first example, we attached a hook to <code>&#39;submitted&#39;</code>
+because that’s when <code>&lt;Job&gt;$queue</code> becomes available in
+callbacks. In the latter example, we attached a hook to
+<code>&#39;created&#39;</code> instead because we didn’t need
+<code>&lt;Job&gt;$queue</code> for that solution. Check the trigger
+order listed in the “Callback Triggers” section above, and attach
+callbacks as early as possible to expedite Job handling.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

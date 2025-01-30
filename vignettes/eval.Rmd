@@ -1,0 +1,95 @@
+---
+title: "Expressions and Variables"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Expressions and Variables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+## Introduction
+
+The "main" process environment (where you are calling `<Queue>$run()`) is isolated from the 
+Worker environments. Therefore, your expression (`expr`) AND all the data needed for evaluating 
+`expr` must be explicitly passed to the Worker.
+
+
+## Expressions
+
+The `expr` parameter can be given in two ways.
+
+  * `expr = { 42 }`
+  * `expr = quote({ 42 })`
+
+The second form is helpful if your expression needs to be passed around your own
+code before being handed off to `<Queue>$run()`. Other call-generating functions 
+can be used instead of `quote()`, such as `call()` or `bquote()`.
+
+```r
+library(jobqueue)
+q <- Queue$new()
+
+q$run({ 42 })$result
+#> [1] 42
+
+expr <- quote({ 42 })
+q$run(expr)$result
+#> [1] 42
+```
+
+
+## Variables
+
+Global variables can be set when the Queue is created.
+
+```r
+globals <- list(MY_DATA = mtcars)
+q       <- Queue$new(globals = globals)
+
+expr <- quote(colnames(MY_DATA))
+q$run(expr)$result[1:6]
+#> [1] "mpg"  "cyl"  "disp" "hp"   "drat" "wt"
+```
+
+Additional variables for a Job can be defined with `vars`.
+
+```r
+expr <- quote(MY_DATA[rows,cols])
+vars <- list(rows = 20:22, cols = c('mpg', 'hp', 'wt'))
+
+q$run(expr = expr, vars = vars)$result
+#>                   mpg  hp    wt
+#> Toyota Corolla   33.9  65 1.835
+#> Toyota Corona    21.5  97 2.465
+#> Dodge Challenger 15.5 150 3.520
+```
+
+
+
+## Best Practices
+
+1. Minimize data transfer to/from Workers (it's slow).
+2. Use UPPERCASE names for global variables.
+
+```r
+library(jobqueue)
+
+q <- Queue$new(
+  globals  = list(A = 1),
+  init     = { B <- 12 },
+  packages = 'jsonlite' )
+
+job <- q$run(
+  'vars' = list(x = 37), 
+  'expr' = { toJSON(c(A, B, x)) } )
+
+job$result
+#> [1,12,37]
+```
+
+Here we assigned two global variables on the Workers: `A` and `B`. We also 
+attached the 'jsonlite' R package to the Workers' search paths. When `expr` is 
+evaluated, it uses `A`, `B`, and `toJSON` from the Worker's environment, and 
+`x` from `vars`.
