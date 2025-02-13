@@ -2,10 +2,12 @@
 test_that('job', {
 
   # library(jobqueue); library(testthat)
-  q <- expect_silent( Queue$new(workers = 1L) )
+  q <- expect_silent( Queue$new(workers = 1L, timeout = 10, wait = TRUE) )
   
   job <- expect_silent( q$run({ TRUE }) )
+  expect_identical(job, q$submit(job))
   expect_true( job$result )
+  expect_identical(job, q$submit(job))
   
   stop_x <- quote(stop('x'))
   
@@ -21,7 +23,7 @@ test_that('job', {
   job <- expect_silent( q$run(
     expr     = quote(2 + 3),
     cpus     = NULL,
-    timeout  = list('queued' = 10),
+    timeout  = ~{ list('queued' = 10) },
     reformat = function (j) {
       o <- j$output
       if (!is.numeric(o)) stop(o)

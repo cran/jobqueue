@@ -26,18 +26,21 @@
 #' 
 #' @param vars  A named list of variables to make available to `expr` during 
 #'        evaluation. Alternatively, an object that can be coerced to a named 
-#'        list with `as.list()`, e.g. named vector, data.frame, or environment.
+#'        list with `as.list()`, e.g. named vector, data.frame, or environment. 
+#'        Or a `function (job)` that returns such an object.
 #' 
 #' @param timeout  A named numeric vector indicating the maximum number of 
 #'        seconds allowed for each state the job passes through, or 'total' to
-#'        apply a single timeout from 'submitted' to 'done'. Example:
+#'        apply a single timeout from 'submitted' to 'done'. Or a 
+#'        `function (job)` that returns the same. Example:
 #'        `timeout = c(total = 2.5, running = 1)`. See `vignette('stops')`.
 #'        
 #' @param hooks  A named list of functions to run when the Job state changes, 
-#'        of the form `hooks = list(created = function (worker) {...})`.
-#'        Names of worker hooks are typically `'created'`, `'submitted'`, 
-#'        `'queued'`, `'dispatched'`, `'starting'`, `'running'`, `'done'`, or 
-#'        `'*'` (duplicates okay). See `vignette('hooks')`.
+#'        of the form `hooks = list(created = function (worker) {...})`. Or a 
+#'        `function (job)` that returns the same. Names of worker hooks are 
+#'        typically `'created'`, `'submitted'`, `'queued'`, `'dispatched'`, 
+#'        `'starting'`, `'running'`, `'done'`, or `'*'` (duplicates okay). 
+#'        See `vignette('hooks')`.
 #'        
 #' @param reformat  Set `reformat = function (job)` to define what 
 #'        `<Job>$result` should return. The default, `reformat = NULL` passes 
@@ -49,11 +52,13 @@
 #'        taking additional action. Setting to `TRUE` or a character vector of 
 #'        condition classes, e.g. `c('interrupt', 'error', 'warning')`, will
 #'        cause the equivalent of `stop(<condition>)` to be called when those
-#'        conditions are produced. See `vignette('results')`.
+#'        conditions are produced. Alternatively, a `function (job)` that 
+#'        returns `TRUE` or `FALSE`. See `vignette('results')`.
 #'        
-#' @param cpus  How many CPU cores to reserve for this Job. Used to limit the 
-#'        number of Jobs running simultaneously to respect `<Queue>$max_cpus`. 
-#'        Does not prevent a Job from using more CPUs than reserved.
+#' @param cpus  How many CPU cores to reserve for this Job.  Or a 
+#'        `function (job)` that returns the same. Used to limit the number of 
+#'        Jobs running simultaneously to respect `<Queue>$max_cpus`. Does not 
+#'        prevent a Job from using more CPUs than reserved.
 #' 
 #' @param max_cpus  Total number of CPU cores that can be reserved by all 
 #'        running Jobs (`sum(<Job>$cpus)`). Does not enforce limits on actual 
@@ -77,6 +82,11 @@
 #'        be a `function (job)` that returns the `copy_id` to assign to a given 
 #'        Job. A `copy_id` of `NULL` disables this feature. 
 #'        See `vignette('stops')`.
+#'        
+#' @param wait  If `TRUE`, blocks until the Queue is 'idle'. If `FALSE`, the 
+#'        Queue object is returned in the 'starting' state. If a number, blocks 
+#'        at most that number of seconds before returning either an 'idle' or 
+#'        'stopped' Queue.
 #'        
 #' @param reason  Passed to `<Job>$stop()` for any Jobs currently managed by 
 #'         this Queue.
@@ -127,7 +137,7 @@ Queue <- R6Class(
         globals   = NULL,
         packages  = NULL,
         init      = NULL,
-        max_cpus  = parallelly::availableCores(),
+        max_cpus  = availableCores(),
         workers   = ceiling(max_cpus * 1.2),
         timeout   = NULL,
         hooks     = NULL,
@@ -135,13 +145,14 @@ Queue <- R6Class(
         signal    = FALSE,
         cpus      = 1L,
         stop_id   = NULL,
-        copy_id   = NULL ) {
+        copy_id   = NULL,
+        wait      = TRUE ) {
        
       q_initialize(
         self, private, 
         globals, packages, init, max_cpus, workers, 
         timeout, hooks, reformat, signal, cpus, 
-        stop_id, copy_id )
+        stop_id, copy_id, wait )
     },
     
     
@@ -184,13 +195,16 @@ Queue <- R6Class(
     
     #' @description
     #' Blocks until the Queue enters the given state.
+    #' @param timeout Stop the Queue if it takes longer than this number of seconds, or `NULL`.
     #' @return This Queue, invisibly.
-    wait = function (state = 'idle') u_wait(self, private, state),
+    wait = function (state = 'idle', timeout = NULL) 
+      u_wait(self, private, state, timeout),
     
     #' @description
     #' Attach a callback function to execute when the Queue enters `state`.
     #' @return A function that when called removes this callback from the Queue.
-    on = function (state, func) u_on(self, private, 'QH', state, func),
+    on = function (state, func) 
+      u_on(self, private, 'QH', state, func),
     
     #' @description
     #' Stop all jobs and workers.
@@ -205,8 +219,6 @@ Queue <- R6Class(
     
     finalize = function (reason = 'queue was garbage collected', cls = NULL) {
       
-      private$is_ready <- FALSE
-      
       fmap(private$.workers, 'stop', reason, cls)
       fmap(private$.jobs,    'stop', reason, cls)
       
@@ -216,11 +228,12 @@ Queue <- R6Class(
     },
     
     .uid         = NULL,
-    .tmp          = NULL,
+    .tmp         = NULL,
     .hooks       = list(),
     .jobs        = list(),
     .workers     = list(),
     .state       = 'initializing',
+    .is_done     = FALSE,
     
     n_workers    = NULL,
     up_since     = NULL,
@@ -268,7 +281,7 @@ q_initialize <- function (
     self, private, 
     globals, packages, init, max_cpus, workers, 
     timeout, hooks, reformat, signal, cpus, 
-    stop_id, copy_id ) {
+    stop_id, copy_id, wait ) {
   
   init_subst       <- substitute(init, env = parent.frame())
   private$up_since <- Sys.time()
@@ -286,7 +299,7 @@ q_initialize <- function (
   self$uid          <- increment_uid('Q')
   private$.tmp      <- normalizePath(tempfile('jqq'), winslash = '/', mustWork = FALSE)
   private$.hooks    <- validate_hooks(hooks[['queue']], 'QH')
-  private$max_cpus  <- validate_positive_integer(max_cpus, if_null = parallelly::availableCores())
+  private$max_cpus  <- validate_positive_integer(max_cpus, if_null = availableCores())
   private$n_workers <- validate_positive_integer(workers,  if_null = ceiling(private$max_cpus * 1.2))
   dir.create(private$.tmp)
   
@@ -300,16 +313,22 @@ q_initialize <- function (
     'init'     = validate_expression(init, init_subst) ))
   
   # Job configuration defaults
-  private$j_conf[['timeout']]  <- validate_timeout(timeout)
-  private$j_conf[['hooks']]    <- validate_hooks(hooks[['job']], 'JH')
+  private$j_conf[['timeout']]  <- validate_timeout(timeout, func_ok = TRUE)
+  private$j_conf[['hooks']]    <- validate_hooks(hooks[['job']], 'JH', func_ok = TRUE)
+  private$j_conf[['signal']]   <- validate_character_vector(signal, func_ok = TRUE, bool_ok = TRUE)
+  private$j_conf[['cpus']]     <- validate_positive_integer(cpus, func_ok = TRUE, if_null = 1L)
   private$j_conf[['reformat']] <- validate_function(reformat)
-  private$j_conf[['signal']]   <- validate_character_vector(signal, bool_ok = TRUE)
-  private$j_conf[['cpus']]     <- validate_positive_integer(cpus, if_null = 1L)
   private$j_conf[['stop_id']]  <- validate_function(stop_id)
   private$j_conf[['copy_id']]  <- validate_function(copy_id)
   
   private$set_state('starting')
   later(private$poll_startup)
+  
+  if (is_true(wait))         self$wait()
+  else if (is.numeric(wait)) self$wait(timeout = wait)
+  
+  if (is_true(private$.is_done))
+    cli_abort('Unable to start Queue')
   
   return (invisible(self))
 }
@@ -430,10 +449,15 @@ q_submit <- function (self, private, job) {
 
 # Stop all jobs and prevent more from being added.
 q_stop <- function (self, private, reason, cls) {
+  
+  private$is_ready <- FALSE
+  private$.is_done <- TRUE
+  
   private$finalize(reason, cls)
   private$set_state('stopped')
   self$workers <- list()
   self$jobs    <- list()
+  
   return (invisible(self))
 }
 
@@ -496,8 +520,9 @@ q__poll_startup <- function (self, private) {
     for (i in integer(n)) {
       
       worker <- Worker$new(
-        'hooks'   = private$w_conf[['hooks']],
-        'globals' = private$w_conf[['config']] )
+        hooks   = private$w_conf[['hooks']],
+        globals = private$w_conf[['config']],
+        wait    = FALSE )
       
       self$workers %<>% c(worker)
     }
