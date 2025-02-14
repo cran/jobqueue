@@ -1,7 +1,7 @@
-b63187124216b47dc29459c0e0fa59fe *DESCRIPTION
+e5a6b1e661d6a4a03c44fe3aa5e91fb4 *DESCRIPTION
 e31c10fcee3c41d035266b2a1748c896 *LICENSE
 e47551cc6d7064462534e5b63bb36f6b *NAMESPACE
-df62197a67abe7f10eee7c57eedfa7b1 *NEWS.md
+414df3a92d5d9529b93a91cadc2a0a3d *NEWS.md
 506a103356fcc9f9b707cc404cf85d27 *R/job.r
 c2806a922f770ce70db48fae2697e99f *R/process.r
 a54d6b94c126bef7e0549289c78c76f8 *R/queue.r
@@ -26,11 +26,11 @@ c54ced021a6e56d5df399da57daf8ae4 *man/Queue.Rd
 75499932839da96d85638620ec8c723c *man/Worker.Rd
 7f8eac9726955be9794a198d6787b938 *man/reexports.Rd
 769c7397cbc78225a13c9a0cb5f8a9e4 *tests/testthat.r
-f4e8f1daa5e5e41430a5d3b392a91351 *tests/testthat/test-job.r
+6e0f9865b13e5a548deb26dbc19de00b *tests/testthat/test-job.r
 a0047a7243feefa2b8951f593681bd79 *tests/testthat/test-process.r
-e9257909b551a917557cd2ea9444ddf4 *tests/testthat/test-queue.r
+37baf89ce4daf37d978421278817a7a4 *tests/testthat/test-queue.r
 76ca5bbc0eebbc5461152fd92e5917e1 *tests/testthat/test-validate.r
-b235a6e622f48c0021433f7f7121897a *tests/testthat/test-worker.r
+21dd75c7d3cb4e4227c71843022ed2c8 *tests/testthat/test-worker.r
 0dbbb427599fa37ca84a0efe5ec4b256 *vignettes/eval.Rmd
 947b4d875d370533c9869a05937a1540 *vignettes/hooks.Rmd
 fde8964eaa23eabdb57e181f692b0096 *vignettes/jobqueue.Rmd
