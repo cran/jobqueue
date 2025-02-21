@@ -72,7 +72,7 @@
 #'        `<Job>$queue$jobs`. Return value is ignored.
 #'        
 #' @param reason  A message to include in the 'interrupt' condition object that 
-#'        will be returned as the Job's result.
+#'        will be returned as the Job's result. Or a condition object.
 #'        
 #' @param cls  Character vector of additional classes to prepend to 
 #'        `c('interrupt', 'condition')`.
@@ -130,7 +130,7 @@ Job <- R6Class(
     #' @param timeout Stop the Job if it takes longer than this number of seconds, or `NULL`.
     #' @return This Job, invisibly.
     wait = function (state = 'done', timeout = NULL) 
-      u_wait(self, private, state, timeout),
+      u_wait(self, private, state, timeout, signal = FALSE),
     
     #' @description
     #' Stop this Job. If the Job is running, its Worker will be restarted.
@@ -153,13 +153,7 @@ Job <- R6Class(
     .state    = 'initializing',
     .is_done  = FALSE,
     .output   = NULL,
-    .proxy    = NULL,
-    
-    finalize = function () {
-      if (identical(self$uid, self$worker$job$uid))
-        if (!is_null(ps <- self$worker$ps))
-          ps_kill(ps)
-    }
+    .proxy    = NULL
   ),
   
   active = list(
@@ -257,7 +251,7 @@ j_print <- function (self) {
 
 
 j_stop <- function (self, private, reason, cls) {
-  self$output <- interrupt_cnd(reason, cls)
+  self$output <- as_cnd(reason, c(cls, 'interrupt'))
   return (invisible(self))
 }
 
@@ -292,10 +286,12 @@ j_result <- function (self, private) {
   signal <- private$.signal # TRUE/FALSE/c('interrupt', 'error')
   if (!is_false(signal) && inherits(result, 'condition'))
     if (is_true(signal) || any(signal %in% class(result)))
-      cli_abort(
-        .envir  = self$caller_env, 
+      abort(
+        call    = self$.call,
+        trace   = self$.trace,
         parent  = result,
-        message = deparse1(private$.expr) )
+        message = deparse1(private$.expr),
+        use_cli_format = FALSE )
   
   return (result)
 }
@@ -309,6 +305,9 @@ j_proxy <- function (self, private, value) {
   proxy <- value
   if (!is_null(proxy) && !inherits(proxy, 'Job'))
     cli_abort('proxy must be a Job or NULL, not {.type {proxy}}.')
+  
+  if (identical(private$.uid, proxy$uid))
+    cli_abort('A Job cannot be its own proxy.')
   
   if (private$.is_done) return (NULL)
   
@@ -356,7 +355,7 @@ j_state <- function (self, private, value) {
   if (!is_null(timeout <- private$.timeout[[new_state]])) {
     msg <- 'exceeded {.val {timeout}} second{?s} while in {.val {new_state}} state'
     msg <- cli_fmt(cli_text(msg))
-    clear_timeout <- later(~{ self$stop(msg, 'timeout') }, delay = timeout)
+    clear_timeout <- later(~{ self$stop(msg, 'timeout') }, delay = timeout)  # nocov
     self$on('.next', function (job) { clear_timeout() })
   }
 }

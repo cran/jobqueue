@@ -1,14 +1,15 @@
 
 
-u_wait <- function (self, private, state, timeout) {
+u_wait <- function (self, private, state, timeout, signal) {
   
   state   <- validate_string(state)
   timeout <- validate_positive_number(timeout)
+  signal  <- validate_logical(signal)
   
-  if (!is.null(timeout)) {
+  if (!is.null(timeout) && timeout < Inf) {
     msg <- '{private$.uid} took longer than {.val {timeout}} second{?s} to enter {.val {state}} state'
     msg <- cli_fmt(cli_text(msg))
-    clear_timeout <- later(~{ self$stop(msg, 'timeout') }, delay = timeout)
+    clear_timeout <- later(~{ self$stop(msg, 'timeout') }, delay = timeout)  # nocov
   } else {
     clear_timeout <- invisible
   }
@@ -30,6 +31,13 @@ u_wait <- function (self, private, state, timeout) {
   }
   
   clear_timeout()
+  
+  if (is_true(signal) && !is.null(private$.cnd)) {
+    if (inherits(private$.cnd, 'error'))
+      cnd_signal(private$.cnd)
+    abort(private$.cnd$message, use_cli_format = FALSE)
+  }
+  
   return (invisible(self))
 }
 
@@ -44,8 +52,7 @@ u_on <- function (self, private, prefix, state, func) {
   
   off <- function () private$.hooks %<>% attr_ne('.uid', uid)
   
-  if (state == self$state) func(self)
-  if (state == '*')        func(self)
+  if (state %in% c('*', self$state)) func(self)
   
   return (invisible(off))
 }
@@ -86,10 +93,11 @@ run_job_function <- function (value, job) {
 }
 
 
-interrupt_cnd <- function (reason = 'stopped', cls = NULL) {
-  reason <- validate_string(reason, cnd_ok = TRUE)
-  cls    <- validate_character_vector(cls)
-  cnd(c(cls, 'interrupt'), message = as.character(reason))
+as_cnd <- function (reason, cls) {
+  if (inherits(reason, 'condition')) return (reason)
+  rlang::cnd(
+    class   = unique(validate_character_vector(cls)), 
+    message = validate_string(reason) )
 }
 
 
@@ -132,7 +140,7 @@ read_logs <- function (tmp) {
   logs <- NULL
   
   for (stream in c('stdout', 'stderr')) {
-    fp <- file.path(tmp, paste(stream, '.txt'))
+    fp <- file.path(tmp, paste0(stream, '.txt'))
     if (is_true(file.exists(fp)) && is_true(file.size(fp) > 0))
       logs %<>% c(sprintf('%s>  %s', stream, readLines(fp)))
   }
@@ -187,7 +195,7 @@ idx_must_be <- function (expected) {
   for (ij in c('i', 'j')) {
     if (!env_has(parent.frame(), ij)) break
     idx <- env_get(parent.frame(), ij, NULL)
-    key <- names(value[[idx]]) %||% ''
+    key <- names(value)[[idx]] %||% ''
     if (nzchar(key)) { varname <- paste0(varname, '$', coan(key))  }
     else             { varname <- paste0(varname, '[[', idx, ']]') }
     value <- value[[idx]]

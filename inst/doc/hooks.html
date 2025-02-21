@@ -377,8 +377,8 @@ so as to not delay Job handling.</p>
 <p>The callback function should accept one argument: the object that
 triggered the callback. Functions accepting zero or multiple arguments
 are also allowed.</p>
-<p>This is a great place for shorthand function definitions introduced
-by R 4.1.0.</p>
+<p>This is a great place for R’s new shorthand function definitions (R
+&gt;= 4.1.0).</p>
 <p>jobqueue also understands the lambda syntax for functions (see
 <code>rlang::as_function()</code>).</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Queue Hooks</span></span>
@@ -457,10 +457,6 @@ trigger regardless of the present state name.</p>
 <tr class="even">
 <td><code>&#39;stopped&#39;</code></td>
 <td>After <code>&lt;Queue&gt;$stop()</code> is called.</td>
-</tr>
-<tr class="odd">
-<td><code>&#39;error&#39;</code></td>
-<td>Workers did not start cleanly.</td>
 </tr>
 </tbody>
 </table>
