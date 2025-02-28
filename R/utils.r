@@ -101,6 +101,17 @@ as_cnd <- function (reason, cls) {
 }
 
 
+as_error <- function (reason) {
+  cnd <- as_cnd(reason, 'error')
+  if (!inherits(cnd, 'error')) {
+    cls <- class(cnd)
+    cls <- append(cls, 'error', which(cls == 'condition') - 1)
+    class(cnd) <- cls
+  }
+  return (cnd)
+}
+
+
 
 last_uid <- new_environment()
 

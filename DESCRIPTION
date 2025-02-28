@@ -1,8 +1,8 @@
 Package: jobqueue
 Type: Package
 Title: Run Interruptible Code Asynchronously
-Version: 1.4.1
-Date: 2025-02-21
+Version: 1.5.1
+Date: 2025-02-28
 Authors@R: c(
     person(
       "Daniel P.", "Smith",
@@ -32,9 +32,9 @@ Imports: cli, later, magrittr, parallelly, promises, ps, R6, rlang,
         semaphore, utils
 Suggests: glue, knitr, rmarkdown, testthat (>= 3.0.0)
 NeedsCompilation: no
-Packaged: 2025-02-21 23:11:59 UTC; Daniel
+Packaged: 2025-02-28 17:59:28 UTC; Daniel
 Author: Daniel P. Smith [aut, cre] (<https://orcid.org/0000-0002-2479-2044>),
   Alkek Center for Metagenomics and Microbiome Research [cph, fnd]
 Maintainer: Daniel P. Smith <dansmith01@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-02-21 23:20:02 UTC
+Date/Publication: 2025-02-28 18:20:02 UTC
