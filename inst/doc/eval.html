@@ -342,11 +342,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>The “main” process environment (where you are calling
-<code>&lt;Queue&gt;$run()</code>) is isolated from the Worker
-environments. Therefore, your expression (<code>expr</code>) AND all the
-data needed for evaluating <code>expr</code> must be explicitly passed
-to the Worker.</p>
+<p>When you call <code>&lt;jobqueue&gt;$run(expr)</code>, the calling
+environment is not visible to <code>expr</code>. Therefore, all
+variables needed by <code>expr</code> must be explicitly provided to
+<code>$run(vars = list())</code> or previously set in the
+<code>jobqueue(globals = list())</code> constructor.</p>
 </div>
 <div id="expressions" class="section level2">
 <h2>Expressions</h2>
@@ -357,63 +357,102 @@ to the Worker.</p>
 </ul>
 <p>The second form is helpful if your expression needs to be passed
 around your own code before being handed off to
-<code>&lt;Queue&gt;$run()</code>. Other call-generating functions can be
-used instead of <code>quote()</code>, such as <code>call()</code> or
+<code>&lt;jobqueue&gt;$run()</code>. Other call-generating functions can
+be used instead of <code>quote()</code>, such as <code>call()</code> or
 <code>bquote()</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>()</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>()</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">42</span> })<span class="sc">$</span>result</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ <span class="dv">42</span> })<span class="sc">$</span>result</span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; [1] 42</span></span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a></span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">quote</span>({ <span class="dv">42</span> })</span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">run</span>(expr)<span class="sc">$</span>result</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>(expr)<span class="sc">$</span>result</span>
 <span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt; [1] 42</span></span></code></pre></div>
 </div>
 <div id="variables" class="section level2">
 <h2>Variables</h2>
-<p>Global variables can be set when the Queue is created.</p>
+<p>Global variables can be set when the <code>jobqueue</code> is
+created.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>globals <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">MY_DATA =</span> mtcars)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>q       <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">globals =</span> globals)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>jq      <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>(<span class="at">globals =</span> globals)</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">quote</span>(<span class="fu">colnames</span>(MY_DATA))</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">run</span>(expr)<span class="sc">$</span>result[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>]</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>(expr)<span class="sc">$</span>result[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>]</span>
 <span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;mpg&quot;  &quot;cyl&quot;  &quot;disp&quot; &quot;hp&quot;   &quot;drat&quot; &quot;wt&quot;</span></span></code></pre></div>
-<p>Additional variables for a Job can be defined with
-<code>vars</code>.</p>
+<p>Additional variables for a <code>job</code> can be defined with
+<code>$run(vars = list())</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">quote</span>(MY_DATA[rows,cols])</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">rows =</span> <span class="dv">20</span><span class="sc">:</span><span class="dv">22</span>, <span class="at">cols =</span> <span class="fu">c</span>(<span class="st">&#39;mpg&#39;</span>, <span class="st">&#39;hp&#39;</span>, <span class="st">&#39;wt&#39;</span>))</span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">run</span>(<span class="at">expr =</span> expr, <span class="at">vars =</span> vars)<span class="sc">$</span>result</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>(<span class="at">expr =</span> expr, <span class="at">vars =</span> vars)<span class="sc">$</span>result</span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;                   mpg  hp    wt</span></span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; Toyota Corolla   33.9  65 1.835</span></span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; Toyota Corona    21.5  97 2.465</span></span>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; Dodge Challenger 15.5 150 3.520</span></span></code></pre></div>
 </div>
-<div id="best-practices" class="section level2">
-<h2>Best Practices</h2>
-<ol style="list-style-type: decimal">
-<li>Minimize data transfer to/from Workers (it’s slow).</li>
-<li>Use UPPERCASE names for global variables.</li>
-</ol>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">globals  =</span> <span class="fu">list</span>(<span class="at">A =</span> <span class="dv">1</span>),</span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">init     =</span> { B <span class="ot">&lt;-</span> <span class="dv">12</span> },</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">packages =</span> <span class="st">&#39;jsonlite&#39;</span> )</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>(</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="st">&#39;vars&#39;</span> <span class="ot">=</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">37</span>), </span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  <span class="st">&#39;expr&#39;</span> <span class="ot">=</span> { <span class="fu">toJSON</span>(<span class="fu">c</span>(A, B, x)) } )</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>job<span class="sc">$</span>result</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; [1,12,37]</span></span></code></pre></div>
-<p>Here we assigned two global variables on the Workers: <code>A</code>
-and <code>B</code>. We also attached the ‘jsonlite’ R package to the
-Workers’ search paths. When <code>expr</code> is evaluated, it uses
-<code>A</code>, <code>B</code>, and <code>toJSON</code> from the
-Worker’s environment, and <code>x</code> from <code>vars</code>.</p>
+<div id="functions" class="section level2">
+<h2>Functions</h2>
+<p>The remote environment inherits from R’s <code>baseenv()</code>, so
+you can call base functions as usual.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">rep</span>(<span class="dv">2</span>, <span class="dv">5</span>) })<span class="sc">$</span>result</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; [1] 2 2 2 2 2</span></span></code></pre></div>
+<p>To use a function from a package, call it with <code>::</code>
+notation.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ jsonlite<span class="sc">::</span><span class="fu">toJSON</span>(<span class="fu">list</span>(<span class="at">x =</span> <span class="dv">42</span>)) })<span class="sc">$</span>result</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; {&quot;x&quot;:[42]}</span></span></code></pre></div>
+<p>To use a custom function, pass it like a variable.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span> (x) x <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f=</span>f, <span class="at">x=</span><span class="dv">5</span>))<span class="sc">$</span>result</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; [1] 10</span></span></code></pre></div>
+<p>But remember, like <code>expr</code>, functions do not have access to
+the local environment.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span> () x <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">f</span>()</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; [1] 10</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>() }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f=</span>f))<span class="sc">$</span>result</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; &lt;simpleError in f(): object &#39;x&#39; not found&gt;</span></span></code></pre></div>
+<p>Functions from packages are the exception - they retain access to
+their namespace when passed as a variable.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">42</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>f <span class="ot">&lt;-</span> jsonlite<span class="sc">::</span>toJSON</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f=</span>f, <span class="at">x=</span>x))<span class="sc">$</span>result</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; {&quot;x&quot;:[42]}</span></span></code></pre></div>
+<p>If you’re using a lot of functions from a package, you can set
+<code>jobqueue(packages = &#39;&lt;packageName&gt;&#39;)</code>, then call that
+package’s functions without the <code>::</code> notation.</p>
+<p>If you’re a package developer, you can set
+<code>jobqueue(namespace = &#39;&lt;yourPackageName&gt;&#39;)</code> to give the
+remote environment access to all functions and variables (both exported
+and non-exported) defined in your package’s namespace. Note however that
+your package must be installed for changes to take effect in the remote
+environment. I.e. <code>devtools::load_all()</code> won’t cut it; an
+<code>R CMD INSTALL</code> is needed (via
+<code>devtools::install()</code>, <code>pak::install_local()</code>,
+etc).</p>
+</div>
+<div id="example" class="section level2">
+<h2>Example</h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>(</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">globals  =</span> <span class="fu">list</span>(<span class="at">A =</span> <span class="dv">1</span>),</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">init     =</span> { B <span class="ot">&lt;-</span> <span class="dv">12</span> },</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">packages =</span> <span class="st">&#39;jsonlite&#39;</span> )</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>job <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>(</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="st">&#39;vars&#39;</span> <span class="ot">=</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">37</span>), </span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="st">&#39;expr&#39;</span> <span class="ot">=</span> { <span class="fu">toJSON</span>(<span class="fu">c</span>(A, B, x)) } )</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>job<span class="sc">$</span>result</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; [1,12,37]</span></span></code></pre></div>
+<p>Here we defined two global variables: <code>A</code> and
+<code>B</code>. We also attached the ‘jsonlite’ R package to the search
+path. When <code>expr</code> is evaluated, it uses <code>toJSON</code>,
+<code>A</code>, and <code>B</code> from the remote environment, and
+<code>x</code> from <code>vars</code>.</p>
 </div>
 
 

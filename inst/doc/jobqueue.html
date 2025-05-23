@@ -340,34 +340,36 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<div id="create-a-queue" class="section level2">
-<h2>Create a Queue</h2>
+<div id="create-a-jobqueue" class="section level2">
+<h2>Create a <code>jobqueue</code></h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>()</span></code></pre></div>
-<p>When you create a Queue, several Worker processes are created in the
-background. You can then evaluate R code on those background processes
-while your main R process is free to do other work.</p>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>()</span></code></pre></div>
+<p>When you create a <code>jobqueue</code>, several <code>worker</code>
+processes are created in the background. You can then evaluate R code on
+those background processes while your main R process is free to do other
+work.</p>
 <blockquote>
 <p><strong>Important</strong></p>
 <p>The background processes are persisent R sessions. Avoid modifying
 their <code>.GlobalEnv</code>, otherwise your R code will produce
-different results based on which Worker evaluates it.</p>
+different results based on which <code>worker</code> evaluates it.</p>
 </blockquote>
 </div>
 <div id="create-a-job" class="section level2">
-<h2>Create a Job</h2>
+<h2>Create a <code>job</code></h2>
 <p>Main article: <code>vignette(&#39;eval&#39;)</code></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">paste</span>(<span class="st">&#39;Hello&#39;</span>, <span class="st">&#39;World!&#39;</span>) })</span></code></pre></div>
-<p>This Job will begin evaluating immediately, assuming no other Jobs
-are ahead of it in the Queue.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">paste</span>(<span class="st">&#39;Hello&#39;</span>, <span class="st">&#39;World!&#39;</span>) })</span></code></pre></div>
+<p>This <code>job</code> will begin evaluating immediately, assuming no
+other <code>job</code>s are ahead of it in the
+<code>jobqueue</code>.</p>
 </div>
 <div id="access-the-result" class="section level2">
 <h2>Access the Result</h2>
 <p>Main article: <code>vignette(&#39;results&#39;)</code></p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Hello World!&quot;</span></span></code></pre></div>
-<p>Running <code>&lt;Job&gt;$result</code> will block until the Job
-finishes and the result is ready.</p>
+<p>Running <code>&lt;job&gt;$result</code> will block until the
+<code>job</code> finishes and the result is ready.</p>
 </div>
 <div id="add-a-callback-hook" class="section level2">
 <h2>Add a Callback Hook</h2>
@@ -380,19 +382,19 @@ result to be handled without blocking the main R process.</p>
 <div id="interrupt-evaluation" class="section level2">
 <h2>Interrupt Evaluation</h2>
 <p>Main article: <code>vignette(&#39;stops&#39;)</code></p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">10</span>); <span class="st">&#39;Zzzzz&#39;</span> })</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">10</span>); <span class="st">&#39;Zzzzz&#39;</span> })</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>job<span class="sc">$</span><span class="fu">stop</span>()</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: job stopped by user&gt;</span></span></code></pre></div>
-<p>If the Job’s result is no longer needed and you want to free up
-compute resources, calling <code>&lt;Job&gt;$stop()</code> will
+<p>If the <code>job</code>’s result is no longer needed and you want to
+free up compute resources, calling <code>&lt;job&gt;$stop()</code> will
 terminate the background process. Terminated background process are
 automatically replaced by new ones.</p>
 </div>
 <div id="passing-data" class="section level2">
 <h2>Passing Data</h2>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Variables to permanently store on the Worker.</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">globals =</span> <span class="fu">list</span>(<span class="at">MY_DATA =</span> mtcars))</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>(<span class="at">globals =</span> <span class="fu">list</span>(<span class="at">MY_DATA =</span> mtcars))</span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># Variables to temporary add to the Worker.</span></span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">2</span>, <span class="at">fields =</span> <span class="fu">c</span>(<span class="st">&#39;mpg&#39;</span>, <span class="st">&#39;cyl&#39;</span>, <span class="st">&#39;disp&#39;</span>))</span>
@@ -400,7 +402,7 @@ automatically replaced by new ones.</p>
 <span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co"># The expression to evaluate on the Worker.</span></span>
 <span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">quote</span>(<span class="fu">head</span>(MY_DATA, n)[,fields])</span>
 <span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>(<span class="at">expr =</span> expr, <span class="at">vars =</span> vars)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>job <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>(<span class="at">expr =</span> expr, <span class="at">vars =</span> vars)</span>
 <span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt;               mpg cyl disp</span></span>

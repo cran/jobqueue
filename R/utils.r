@@ -87,7 +87,7 @@ u__set_state <- function (self, private, state) {
 
 run_job_function <- function (value, job) {
   if (is_formula(value)) value <- as_function(value)
-  if (inherits(job, 'Job'))
+  if (inherits(job, 'job'))
     if (is_function(value)) value <- value(job)
   return (value)
 }
@@ -113,38 +113,11 @@ as_error <- function (reason) {
 
 
 
-last_uid <- new_environment()
-
 increment_uid <- function (prefix) {
-  value <- env_get(last_uid, prefix, 1L)
-  assign(prefix, value + 1L, last_uid)
+  hash  <- paste0('prefix_', rlang::hash(prefix))
+  value <- env_get(ENV, hash, 1L)
+  assign(hash, value + 1L, ENV)
   return (paste0(prefix, value))
-}
-
-
-# Two-step save.
-save_rds <- function (tmp, ...) {
-  
-  dots <- list(...)
-  for (i in seq_along(dots)) {
-    
-    # save_rds(tmp, output = output)
-    key <- names(dots)[[i]] %||% ''
-    val <- dots[[i]]
-    
-    # save_rds(tmp, 'output')
-    if (nchar(key) == 0) {
-      key <- dots[[i]]
-      val <- get(key, pos = parent.frame())
-    }
-    tmp_dest <- file.path(tmp, paste0('_', key, '.rds'))
-    dest     <- file.path(tmp, paste0(     key, '.rds'))
-    
-    saveRDS(val, tmp_dest)
-    file.rename(tmp_dest, dest)
-  }
-  
-  invisible()
 }
 
 
@@ -241,3 +214,63 @@ get_eq <- function (x, el, val) {
   x[unlist(sapply(seq_along(x), function (i) identical(x[[i]][[el]], val)))]
 }
 
+
+
+# Finds e.g. '/path/to/pid_afNUaEVguc0l' and returns 'afNUaEVguc0l'
+dir_prefix <- function (dir, prefix) {
+  
+  file <- list.files(dir, pattern = paste0('^', prefix))
+  if (length(file) == 1)
+    return (substr(file, nchar(prefix) + 1, nchar(file)))
+  
+  return (NULL)
+}
+
+dir_ps <- function (dir) {
+  if (!is.null(ps <- dir_prefix(dir, 'pid_')))
+    ps <- try(silent = TRUE, p__ps_handle(ps))
+  return (ps)
+}
+
+dir_sem <- function (dir) {
+  if (!is.null(sem <- dir_prefix(dir, 'sem_')))
+    sem <- interprocess::semaphore(name = sem, assert = 'exists')
+  return (sem)
+}
+
+dir_create <- function (dir, inc = NULL) {
+  if (!is.null(inc))    dir <- c(dir, increment_uid(inc))
+  if (length(dir) > 1)  dir <- do.call(file.path, as.list(dir))
+  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+  normalizePath(dir, winslash = '/')
+}
+
+dir_delete <- function (dir) {
+  if (dir.exists(dir))
+    unlink(dir, recursive = TRUE, force = TRUE, expand = FALSE)
+}
+
+dir_cleanup <- function (dir) {
+  files <- list.files(dir, all.files = TRUE, no.. = TRUE)
+  files <- setdiff(files, c('cmds.r', 'stdout.txt', 'stderr.txt', 'ready'))
+  files <- file.path(dir, files)
+  if (length(files) > 0)
+    unlink(files, recursive = TRUE, force = TRUE, expand = FALSE)
+}
+
+file_create <- function (dir, file) {
+  if (length(file) > 1) file <- paste(file, collapse = '')
+  file.create(file.path(dir, file))
+}
+
+file_exists <- function (dir, file) {
+  file.exists(file.path(dir, file))
+}
+
+is_cran_check <- function() {
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+    FALSE
+  } else {
+    Sys.getenv("_R_CHECK_PACKAGE_NAME_", "") != ""
+  }
+}

@@ -342,50 +342,55 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>You can save compute resources by stopping the execution of Jobs that
-are no longer needed. If that Job is currently running on a Worker, then
-the associated background process is terminated. Terminated background
-process are automatically replaced by new ones.</p>
+<p>You can save compute resources by stopping the execution of
+<code>job</code>s that are no longer needed. If that <code>job</code> is
+currently running, then the associated background process is terminated.
+Terminated background process are automatically replaced by new
+ones.</p>
 <p>There are several ways to stop a Job:</p>
 <ul>
-<li><code>&lt;Job&gt;$stop()</code>: return an interrupt condition.</li>
-<li><code>&lt;Job&gt;$output&lt;-</code>: return a custom result.</li>
-<li><code>&lt;Job&gt;$stop_id</code>: replace redundant Jobs.</li>
-<li><code>&lt;Job&gt;$copy_id</code>: combine redundant Jobs.</li>
-<li><code>&lt;Job&gt;$timeout</code>: cap a Job’s compute time.</li>
+<li><code>&lt;job&gt;$stop()</code>: return an interrupt condition.</li>
+<li><code>&lt;job&gt;$output&lt;-</code>: return a custom result.</li>
+<li><code>&lt;job&gt;$stop_id</code>: replace redundant
+<code>job</code>s.</li>
+<li><code>&lt;job&gt;$copy_id</code>: combine redundant
+<code>job</code>s.</li>
+<li><code>&lt;job&gt;$timeout</code>: cap a <code>job</code>’s compute
+time.</li>
 </ul>
 </div>
 <div id="setup" class="section level2">
 <h2>Setup</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(jobqueue)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">workers =</span> <span class="dv">1</span>)</span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>(<span class="at">workers =</span> <span class="dv">1</span>)</span></code></pre></div>
 </div>
 <div id="immediate-stop" class="section level2">
 <h2>Immediate Stop</h2>
-<p>As soon as a Job is created, it can be stopped by either calling
-<code>&lt;Job&gt;$stop()</code> or by assigning to
-<code>&lt;Job&gt;$output</code>. These methods work up until the Job
-state is <code>&#39;done&#39;</code>. Once the Job state is <code>&#39;done&#39;</code>,
-<code>&lt;Job&gt;$output</code> is immutable and calling
-<code>&lt;Job&gt;$stop()</code> will have no effect (since it’s already
-stopped). Calling <code>&lt;Job&gt;$stop()</code> and assigning to
-<code>&lt;Job&gt;$output</code> both have the side effect of setting the
-Job state to <code>&#39;done&#39;</code>.</p>
+<p>As soon as a <code>job</code> is created, it can be stopped by either
+calling <code>&lt;job&gt;$stop()</code> or by assigning to
+<code>&lt;job&gt;$output</code>. These methods work up until the
+<code>job</code> state is <code>&#39;done&#39;</code>. Once the <code>job</code>
+state is <code>&#39;done&#39;</code>, <code>&lt;job&gt;$output</code> is
+immutable and calling <code>&lt;job&gt;$stop()</code> will have no
+effect (since it’s already stopped). Calling
+<code>&lt;job&gt;$stop()</code> and assigning to
+<code>&lt;job&gt;$output</code> both have the side effect of setting the
+<code>job</code> state to <code>&#39;done&#39;</code>.</p>
 <div id="interrupting-with-jobstop" class="section level3">
-<h3>Interrupting with <code>&lt;Job&gt;$stop()</code></h3>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
+<h3>Interrupting with <code>&lt;job&gt;$stop()</code></h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> job_class<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>job<span class="sc">$</span><span class="fu">stop</span>()</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: job stopped by user&gt;</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>job <span class="ot">&lt;-</span> job_class<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
 <span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>job<span class="sc">$</span><span class="fu">stop</span>(<span class="st">&#39;my reason&#39;</span>)</span>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: my reason&gt;</span></span>
 <span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
 <span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="fu">class</span>(job<span class="sc">$</span>result)</span>
 <span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; [1] &quot;interrupt&quot; &quot;condition&quot;</span></span></code></pre></div>
-<p>You can call <code>&lt;Job&gt;$stop()</code> from within callback
+<p>You can call <code>&lt;job&gt;$stop()</code> from within callback
 hooks.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>hooks <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="st">&#39;created&#39;</span> <span class="ot">=</span> <span class="cf">function</span> (job) {</span>
@@ -394,16 +399,16 @@ hooks.</p>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  }</span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>job <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">sum</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">200</span>), <span class="at">hooks =</span> hooks)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>job <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">sum</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">200</span>), <span class="at">hooks =</span> hooks)</span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: Job is too large.&gt;</span></span></code></pre></div>
 </div>
 <div id="assigning-to-joboutput" class="section level3">
-<h3>Assigning to <code>&lt;Job&gt;$output</code></h3>
-<p><code>&lt;Job&gt;$output</code> can only be assigned to once. If the
-Job is not yet done when <code>&lt;Job&gt;$output</code> is assigned,
-then any ongoing processing will be halted.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
+<h3>Assigning to <code>&lt;job&gt;$output</code></h3>
+<p><code>&lt;job&gt;$output</code> can only be assigned to once. If the
+<code>job</code> is not yet done when <code>&lt;job&gt;$output</code> is
+assigned, then any ongoing processing will be halted.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> job_class<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="dv">10</span> })</span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>job<span class="sc">$</span>state</span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;created&quot;</span></span>
@@ -415,23 +420,23 @@ then any ongoing processing will be halted.</p>
 <span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
 <span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Custom result&quot;</span></span></code></pre></div>
-<p>If you’ve set <code>&lt;Job&gt;$reformat</code>, it will determine
-<code>&lt;Job&gt;$result</code> as usual. See
+<p>If you’ve set <code>&lt;job&gt;$reformat</code>, it will determine
+<code>&lt;job&gt;$result</code> as usual. See
 <code>vignette(&#39;results&#39;)</code>.</p>
 </div>
 </div>
 <div id="replacing-and-combining" class="section level2">
 <h2>Replacing and Combining</h2>
-<p>Sometimes repeat jobs may be sent to the Queue, for instance, a user
-clicking a ‘submit’ button repeatedly. <code>stop_id</code> and
-<code>copy_id</code> can prevent such requests from overloading the
-server.</p>
+<p>Sometimes repeat <code>job</code>s may be sent to the
+<code>jobqueue</code>, for instance, a user clicking a ‘submit’ button
+repeatedly. <code>stop_id</code> and <code>copy_id</code> can prevent
+such requests from overloading the server.</p>
 <div id="stop-id" class="section level3">
 <h3>Stop ID</h3>
-<p>New jobs will replace existing jobs with the same
+<p>New jobs will replace existing <code>job</code>s with the same
 <code>stop_id</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;A&#39;</span> }, <span class="at">stop_id =</span> <span class="dv">123</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;B&#39;</span> },               <span class="at">stop_id =</span> <span class="dv">123</span>)</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;A&#39;</span> }, <span class="at">stop_id =</span> <span class="dv">123</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;B&#39;</span> },               <span class="at">stop_id =</span> <span class="dv">123</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>job1<span class="sc">$</span>result</span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: duplicated stop_id&gt;</span></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>job2<span class="sc">$</span>result</span>
@@ -439,29 +444,29 @@ server.</p>
 </div>
 <div id="copy-id" class="section level3">
 <h3>Copy ID</h3>
-<p>New jobs will mirror the output of existing jobs with the same
-<code>copy_id</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;A&#39;</span> }, <span class="at">copy_id =</span> <span class="dv">456</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;B&#39;</span> },               <span class="at">copy_id =</span> <span class="dv">456</span>)</span>
+<p>New <code>job</code>s will mirror the output of existing
+<code>job</code>s with the same <code>copy_id</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;A&#39;</span> }, <span class="at">copy_id =</span> <span class="dv">456</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="st">&#39;B&#39;</span> },               <span class="at">copy_id =</span> <span class="dv">456</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>job1<span class="sc">$</span>result</span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;A&quot;</span></span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>job2<span class="sc">$</span>result</span>
 <span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;A&quot;</span></span></code></pre></div>
 </div>
-<div id="in-queuenew" class="section level3">
-<h3>In <code>Queue$new()</code></h3>
+<div id="in-jobqueue" class="section level3">
+<h3>In <code>jobqueue()</code></h3>
 <p>If you set <code>stop_id</code> and/or <code>copy_id</code> in
-<code>Queue$new()</code>, then they must be functions (or lambda
-notation functions) that accept a Job object as input and returns a
+<code>jobqueue()</code>, then they must be functions (or lambda notation
+functions) that accept a <code>job</code> object as input and returns a
 value <code>id</code>. If <code>id</code> is <code>NULL</code>, then no
 comparisons will be done. Otherwise, <code>id</code> can be any data
 type and will be compared to other <code>id</code>s with
 <code>identical()</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>q <span class="ot">&lt;-</span> Queue<span class="sc">$</span><span class="fu">new</span>(<span class="at">stop_id =</span> <span class="cf">function</span> (job) <span class="fu">list</span>(job<span class="sc">$</span>vars<span class="sc">$</span>f, job<span class="sc">$</span>user_id))</span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>jq <span class="ot">&lt;-</span> <span class="fu">jobqueue</span>(<span class="at">stop_id =</span> <span class="cf">function</span> (job) <span class="fu">list</span>(job<span class="sc">$</span>vars<span class="sc">$</span>f, job<span class="sc">$</span>user_id))</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> sum,  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> sum,  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>),  <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>job3 <span class="ot">&lt;-</span> q<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> mean, <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>job1 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> sum,  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>job2 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> sum,  <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>),  <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>job3 <span class="ot">&lt;-</span> jq<span class="sc">$</span><span class="fu">run</span>({ <span class="fu">f</span>(x) }, <span class="at">vars =</span> <span class="fu">list</span>(<span class="at">f =</span> mean, <span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">user_id =</span> <span class="st">&#39;A&#39;</span>)</span>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>job1<span class="sc">$</span>result</span>
 <span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: duplicated stop_id&gt;</span></span>
@@ -473,12 +478,12 @@ type and will be compared to other <code>id</code>s with
 </div>
 <div id="timeouts" class="section level2">
 <h2>Timeouts</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;Zzzzz&#39;</span> }, <span class="at">timeout =</span> <span class="fl">0.2</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>q<span class="sc">$</span><span class="fu">submit</span>(job)</span>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>job <span class="ot">&lt;-</span> job_class<span class="sc">$</span><span class="fu">new</span>({ <span class="fu">Sys.sleep</span>(<span class="dv">5</span>); <span class="st">&#39;Zzzzz&#39;</span> }, <span class="at">timeout =</span> <span class="fl">0.2</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>jq<span class="sc">$</span><span class="fu">submit</span>(job)</span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: total runtime exceeded 0.2 seconds&gt;</span></span>
 <span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>job <span class="ot">&lt;-</span> Job<span class="sc">$</span><span class="fu">new</span>({ <span class="dv">10</span> }, <span class="at">timeout =</span> <span class="fu">list</span>(<span class="at">created =</span> <span class="fl">0.2</span>))</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>job <span class="ot">&lt;-</span> job_class<span class="sc">$</span><span class="fu">new</span>({ <span class="dv">10</span> }, <span class="at">timeout =</span> <span class="fu">list</span>(<span class="at">created =</span> <span class="fl">0.2</span>))</span>
 <span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>job<span class="sc">$</span>result</span>
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; &lt;interrupt: exceeded 0.2 seconds while in &quot;created&quot; state&gt;</span></span></code></pre></div>
 <p>Limits (in seconds) can be set on:</p>
